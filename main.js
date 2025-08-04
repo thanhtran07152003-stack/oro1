@@ -35,7 +35,7 @@ console.log("\x1b[36m%s\x1b[0m", "               VELHUST                   ");
 console.log("\x1b[35m%s\x1b[0m", "============================================\n");
 
 const MNEMONIC = `
-wealth option session shy tube chef traffic seed grow word crack almost
+ripple still finish quit execute shiver hundred market slice ice fade fragile
 `.trim();
 
 const CONFIG = {
