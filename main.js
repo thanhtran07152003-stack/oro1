@@ -35,11 +35,11 @@ console.log("\x1b[36m%s\x1b[0m", "               VELHUST                   ");
 console.log("\x1b[35m%s\x1b[0m", "============================================\n");
 
 const MNEMONIC = `
-nephew client pencil canal gospel define firm mechanic clip grain casual unhappy
+wealth option session shy tube chef traffic seed grow word crack almost
 `.trim();
 
 const CONFIG = {
-    rpcEndpoint: "https://public-zigchain-testnet-rpc.numia.xyz",
+    rpcEndpoint: "https://testnet-rpc.zigchain.com",
     chainId: "zig-test-2",
     zigDenom: "uzig",
     oroDenom: "coin.zig10rfjm85jmzfhravjwpq3hcdz8ngxg7lxd0drkr.uoro",
@@ -48,7 +48,7 @@ const CONFIG = {
 };
 
 function getRandomAmount() {
-    return parseFloat((Math.random() * (0.009 - 0.001) + 0.001).toFixed(3)) ;
+    return parseFloat((Math.random() * (0.009 - 0.001) + 0.001).toFixed(3));
 }
 
 const ZIG_AMOUNT = getRandomAmount();
