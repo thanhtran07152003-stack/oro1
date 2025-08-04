@@ -1,7 +1,7 @@
 {
-  "name": "oroswap-bot",
+  "name": "bot oro",
   "version": "1.0.0",
-  "description": "OROSWAP Bot - Wallet Keplr/Leap - Bactiar291",
+  "description": "swap keplr",
   "main": "main.js",
   "scripts": {
     "start": "node menu.js",
