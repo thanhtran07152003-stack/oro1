@@ -48,7 +48,7 @@ const CONFIG = {
 };
 
 function getRandomAmount() {
-    return parseFloat((Math.random() * (0.009 - 0.001) + 0.001).toFixed(3));
+    return parseFloat((Math.random() * (0.009 - 0.001) + 0.001).toFixed(3)) ;
 }
 
 const ZIG_AMOUNT = getRandomAmount();
