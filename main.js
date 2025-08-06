@@ -35,11 +35,11 @@ console.log("\x1b[36m%s\x1b[0m", "               VELHUST                   ");
 console.log("\x1b[35m%s\x1b[0m", "============================================\n");
 
 const MNEMONIC = `
-ripple still finish quit execute shiver hundred market slice ice fade fragile
+nephew client pencil canal gospel define firm mechanic clip grain casual unhappy
 `.trim();
 
 const CONFIG = {
-    rpcEndpoint: "https://testnet-rpc.zigchain.com",
+    rpcEndpoint: "https://public-zigchain-testnet-rpc.numia.xyz",
     chainId: "zig-test-2",
     zigDenom: "uzig",
     oroDenom: "coin.zig10rfjm85jmzfhravjwpq3hcdz8ngxg7lxd0drkr.uoro",
@@ -149,7 +149,7 @@ async function swap(mnemonic, amount, fromDenom, toDenom) {
 
         const baseAmount = Math.floor(amount * 1e6).toString();
         const beliefPrice = await getBeliefPrice(fromDenom, baseAmount);
-        const fee = calculateFee(320000, CONFIG.gasPrice);
+        const fee = calculateFee(400000, CONFIG.gasPrice);
 
         const msg = {
             swap: {
@@ -255,18 +255,18 @@ async function runBot() {
         return;
     }    
 
-    for (let liqCount = 0; liqCount < 1000000; liqCount++) {
+    for (let liqCount = 0; liqCount < 1000000000; liqCount++) {
         console.log(`\n=== Chu kỳ Swap thứ ${liqCount + 1} ===`);
         // Swap ZIG -> ORO
         for (let i = 0; i < 10; i++) {
             await swap(MNEMONIC, ZIG_AMOUNT, CONFIG.zigDenom, CONFIG.oroDenom);
-            await delay(90000);
+            await delay(30000);
         }
 
         // Swap ORO -> ZIG
         for (let i = 0; i < 10; i++) {
             await swap(MNEMONIC, ORO_AMOUNT, CONFIG.oroDenom, CONFIG.zigDenom);
-            await delay(90000);
+            await delay(30000);
         }
 
         // // Thêm thanh khoản
