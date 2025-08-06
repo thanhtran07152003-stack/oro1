@@ -258,7 +258,7 @@ async function runBot() {
     for (let liqCount = 0; liqCount < 1000000000; liqCount++) {
         console.log(`\n=== Chu kỳ Swap thứ ${liqCount + 1} ===`);
         // Swap ZIG -> ORO
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 20; i++) {
             await swap(MNEMONIC, ZIG_AMOUNT, CONFIG.zigDenom, CONFIG.oroDenom);
             await delay(30000);
         }
