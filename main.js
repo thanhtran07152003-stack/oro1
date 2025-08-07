@@ -260,13 +260,13 @@ async function runBot() {
         // Swap ZIG -> ORO
         for (let i = 0; i < 20; i++) {
             await swap(MNEMONIC, ZIG_AMOUNT, CONFIG.zigDenom, CONFIG.oroDenom);
-            await delay(30000);
+            await delay(5000);
         }
 
         // Swap ORO -> ZIG
         for (let i = 0; i < 10; i++) {
             await swap(MNEMONIC, ORO_AMOUNT, CONFIG.oroDenom, CONFIG.zigDenom);
-            await delay(30000);
+            await delay(5000);
         }
 
         // // Thêm thanh khoản
