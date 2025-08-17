@@ -230,7 +230,7 @@ async function addLiquidity(mnemonic, amountUoro, _amountUzig) {
                         info: { native_token: { denom: CONFIG.zigDenom } }
                     }
                 ],
-                slippage_tolerance: "0.01" // 1% thôi là đủ
+                slippage_tolerance: "0.05" // 1% thôi là đủ
             }
         };
 
