@@ -51,9 +51,14 @@ function getRandomAmount() {
     return parseFloat((Math.random() * (0.0009 - 0.0001) + 0.0001).toFixed(4));
 }
 
+function getRandomAmountadd() {
+    return parseFloat((Math.random() * (0.00005 - 0.00001) + 0.00001).toFixed(5));
+}
+
 const ZIG_AMOUNT = getRandomAmount();
 const ORO_AMOUNT = getRandomAmount();
-const LIQ_ORO = getRandomAmount();
+const LIQ_ORO = getRandomAmountadd();
+const LIQ_ZIG = getRandomAmountadd();
 
 const delay = async (ms) => {
     process.stdout.write(`\r⏳ Đang chờ ${ms / 1000} giây... `);
@@ -175,7 +180,22 @@ async function swap(mnemonic, amount, fromDenom, toDenom) {
     }
 }
 
-async function addLiquidity(mnemonic, amountUoro, amountUzig) {
+// Lấy tỷ lệ pool hiện tại (ZIG/ORO)
+async function getPoolRatio() {
+    const client = await CosmWasmClient.connect(CONFIG.rpcEndpoint);
+    const pool = await client.queryContractSmart(CONFIG.swapContract, { pool: {} });
+
+    const oroAsset = pool.assets.find(a => a.info.native_token?.denom === CONFIG.oroDenom);
+    const zigAsset = pool.assets.find(a => a.info.native_token?.denom === CONFIG.zigDenom);
+
+    const oroAmount = Number(oroAsset.amount);
+    const zigAmount = Number(zigAsset.amount);
+
+    const ratio = zigAmount / oroAmount; // số ZIG cho 1 ORO
+    return { oroAmount, zigAmount, ratio };
+}
+
+async function addLiquidity(mnemonic, amountUoro, _amountUzig) {
     try {
         const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: "zig" });
         const [account] = await wallet.getAccounts();
@@ -183,61 +203,45 @@ async function addLiquidity(mnemonic, amountUoro, amountUzig) {
             gasPrice: CONFIG.gasPrice, chainId: CONFIG.chainId
         });
 
-        // Kiểm tra số dư
-        const zigBalance = await getBalance(MNEMONIC, CONFIG.zigDenom);
-        const oroBalance = await getBalance(MNEMONIC, CONFIG.oroDenom);
-        if (zigBalance.formatted < amountUzig || oroBalance.formatted < amountUoro) {
-            throw new Error(`Số dư không đủ: Cần ${amountUzig} ZIG và ${amountUoro} ORO`);
-        }
+        // Query pool để tính đúng tỷ lệ
+        const { ratio } = await getPoolRatio();
 
-        // Lấy tỷ lệ pool mới nhất
-        const poolInfo = await getPoolRatio();
-        if (!poolInfo) {
-            throw new Error("Không thể lấy thông tin pool");
-        }
-        const { ratio } = poolInfo;
+        // Convert ORO thành base unit
+        const uoroBaseAmount = Math.floor(Number(amountUoro) * 1e6);
 
-        // Kiểm tra tỷ lệ hợp lệ
-        if (isNaN(ratio) || ratio <= 0) {
-            throw new Error("Tỷ lệ pool không hợp lệ");
-        }
+        // Tính lượng ZIG tương ứng theo tỷ lệ pool
+        const uzigBaseAmount = Math.floor(uoroBaseAmount * ratio);
 
-        const adjustedZig = amountUoro * ratio; // Cập nhật lượng ZIG dựa trên tỷ lệ mới nhất
-        console.log(`Cung cấp thanh khoản: ${amountUoro} ORO và ${adjustedZig.toFixed(6)} ZIG`);
-
-        // Chuyển đổi sang micro-unit
-        const uoroAmount = Math.floor(amountUoro * 1e6).toString();
-        const uzigAmount = Math.floor(adjustedZig * 1e6).toString();
-
-        // Kiểm tra uzigAmount hợp lệ
-        if (isNaN(uzigAmount) || uzigAmount <= 0) {
-            throw new Error("Số lượng ZIG không hợp lệ để cung cấp thanh khoản");
+        // Nếu ra 0 thì bỏ qua
+        if (uoroBaseAmount <= 0 || uzigBaseAmount <= 0) {
+            console.log("⚠️ Bỏ qua vì số lượng quá nhỏ.");
+            return;
         }
 
         const msg = {
             provide_liquidity: {
                 assets: [
                     {
-                        amount: uoroAmount,
+                        amount: uoroBaseAmount.toString(),
                         info: { native_token: { denom: CONFIG.oroDenom } }
                     },
                     {
-                        amount: uzigAmount,
+                        amount: uzigBaseAmount.toString(),
                         info: { native_token: { denom: CONFIG.zigDenom } }
                     }
                 ],
-                slippage_tolerance: "0.5" // Tăng lên 20% để giảm lỗi trượt giá
+                slippage_tolerance: "0.01" // 1% thôi là đủ
             }
         };
 
         const funds = [
-            { denom: CONFIG.oroDenom, amount: uoroAmount },
-            { denom: CONFIG.zigDenom, amount: uzigAmount }
+            { denom: CONFIG.oroDenom, amount: uoroBaseAmount.toString() },
+            { denom: CONFIG.zigDenom, amount: uzigBaseAmount.toString() }
         ];
 
-        const fee = calculateFee(500000, CONFIG.gasPrice);
+        const fee = calculateFee(320000, CONFIG.gasPrice);
 
-        const result = await client.execute(account.address, CONFIG.swapContract, msg, fee, "Swap", funds);
+        const result = await client.execute(account.address, CONFIG.swapContract, msg, fee, "Provide Liquidity", funds);
 
         console.log(`\n✅ Cung cấp thanh khoản cặp ORO/ZIG thành công! TX: ${result.transactionHash}`);
         console.log(`🔍 https://zigscan.org/tx/${result.transactionHash}`);
@@ -258,31 +262,22 @@ async function runBot() {
     for (let liqCount = 0; liqCount < 1000000000; liqCount++) {
         console.log(`\n=== Chu kỳ Swap thứ ${liqCount + 1} ===`);
         // Swap ZIG -> ORO
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 50; i++) {
             await swap(MNEMONIC, ZIG_AMOUNT, CONFIG.zigDenom, CONFIG.oroDenom);
             await delay(5000);
         }
 
         // Swap ORO -> ZIG
-        for (let i = 0; i < 10; i++) {
-            await swap(MNEMONIC, ORO_AMOUNT, CONFIG.oroDenom, CONFIG.zigDenom);
-            await delay(5000);
-        }
+       // for (let i = 0; i < 10; i++) {
+           // await swap(MNEMONIC, ORO_AMOUNT, CONFIG.oroDenom, CONFIG.zigDenom);
+          //  await delay(5000);
+       // }
 
         // // Thêm thanh khoản
-        // for (let i = 0; i < 5; i++) {
-        //     console.log("\n💧 Đang thêm thanh khoản...");
-        //     const poolInfo = await getPoolRatio();
-        //     if (poolInfo) {
-        //         const { ratio } = poolInfo;
-        //         const adjustedZig = LIQ_ORO * ratio; // Tính lượng ZIG cần dựa trên tỷ lệ pool
-        //         await addLiquidity(MNEMONIC, LIQ_ORO, adjustedZig);
-        //         await delay(25000);
-        //     } else {
-        //         console.error("Không thể thêm thanh khoản do lỗi lấy tỷ lệ pool.");
-        //         return;
-        //     }
-        // }
+         for (let i = 0; i < 200; i++) {
+             await addLiquidity(MNEMONIC,LIQ_ORO,LIQ_ZIG);
+             await delay(5000)
+        }
     }
 
     console.log("\n✅ Hoàn thành bot!");
